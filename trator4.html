@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema Financeiro</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Trator4</h1>
+        <form id="transaction-form">
+            <label for="owner">Dono:</label>
+            <input type="text" id="owner" name="owner"><br> <!-- Campo de Dono -->
+            <label for="tractorName">Nome Trator:</label>
+            <input type="text" id="tractorName" name="tractorName"><br> <!-- Campo de Nome Trator -->
+            <label for="type">Tipo:</label>
+            <select name="type" id="type">
+                <option value="recebimento">Recebimento</option>
+                <option value="pagamento">Pagamento</option>
+            </select><br> <!-- Alteração nas opções -->
+            <label for="description">Descrição:</label>
+            <input type="text" id="description" name="description"><br>
+            <label for="amount">Valor:</label>
+            <input type="number" id="amount" name="amount"><br>
+            <button type="submit">Adicionar Transação</button>
+        </form>
+        <div id="transaction-list">
+            <h2>Lista de Transações</h2>
+            <ul id="transactions"></ul>
+            <p id="total">Total: R$ <span id="total-amount">0.00</span></p> <!-- Elemento para exibir o total -->
+        </div>
+        <a href="index.html">Voltar para a página inicial</a>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('transaction-form');
+            const transactionList = document.getElementById('transactions');
+            const totalElement = document.getElementById('total-amount');
+            let totalAmount = parseFloat(localStorage.getItem('totalAmount')) || 0;
+
+            // Atualiza o total na página
+            totalElement.textContent = totalAmount.toFixed(2);
+
+            // Carrega transações salvas no localStorage
+            const savedTransactions = JSON.parse(localStorage.getItem('transactions')) || [];
+            savedTransactions.forEach(transaction => {
+                addTransactionToList(transaction);
+            });
+
+            form.addEventListener('submit', function(event) {
+                event.preventDefault();
+
+                const owner = form.owner.value; // Obtém o valor do campo Dono
+                const tractorName = form.tractorName.value; // Obtém o valor do campo Nome Trator
+                const type = form.type.value;
+                const description = form.description.value;
+                const amount = parseFloat(form.amount.value);
+
+                if (!owner || !tractorName || !type || !description || isNaN(amount)) {
+                    alert('Por favor, preencha todos os campos corretamente.');
+                    return;
+                }
+
+                // Adiciona o valor da nova transação ao total
+                if (type === 'recebimento') {
+                    totalAmount += amount;
+                } else {
+                    totalAmount -= amount;
+                }
+
+                // Atualiza o elemento HTML que exibe o total
+                totalElement.textContent = totalAmount.toFixed(2);
+
+                // Cria o texto da transação
+                const transactionText = `${type.toUpperCase()} - ${owner} - ${tractorName} - ${description} - R$ ${amount.toFixed(2)}`;
+
+                // Adiciona a transação à lista e ao localStorage
+                addTransactionToList(transactionText);
+                savedTransactions.push(transactionText);
+                localStorage.setItem('transactions', JSON.stringify(savedTransactions));
+
+                // Salva o total no localStorage
+                localStorage.setItem('totalAmount', totalAmount);
+
+                form.reset();
+            });
+
+            // Função para adicionar uma transação à lista
+            function addTransactionToList(transactionText) {
+                const transactionItem = document.createElement('li');
+                transactionItem.textContent = transactionText;
+
+                // Cria o botão de exclusão
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = 'Excluir';
+                deleteButton.addEventListener('click', function() {
+                    // Remove a transação da lista
+                    transactionList.removeChild(transactionItem);
+
+                    // Atualiza o total
+                    const amount = parseFloat(transactionText.split(' - ')[4].replace('R$ ', ''));
+                    totalAmount -= (transactionText.split(' - ')[0] === 'RECEBIMENTO' ? amount : -amount);
+                    totalElement.textContent = totalAmount.toFixed(2);
+
+                    // Remove a transação do localStorage
+                    const index = savedTransactions.indexOf(transactionText);
+                    if (index > -1) {
+                        savedTransactions.splice(index, 1);
+                        localStorage.setItem('transactions', JSON.stringify(savedTransactions));
+                    }
+
+                    // Atualiza o total no localStorage
+                    localStorage.setItem('totalAmount', totalAmount);
+                });
+
+                // Adiciona o botão de exclusão ao item da transação
+                transactionItem.appendChild(deleteButton);
+                transactionList.appendChild(transactionItem);
+            }
+        });
+    </script>
+</body>
+</html>
